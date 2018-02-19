@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Logic.Dtos;
 using Logic.Entities;
 using Logic.Repositories;
 using Logic.Services;
@@ -28,22 +29,51 @@ namespace Api.Controllers
         {
             Customer customer = _customerRepository.GetById(id);
             if (customer == null)
-            {
                 return NotFound();
-            }
 
-            return Json(customer);
+            var dto = new CustomerDto
+            {
+                Id = customer.Id,
+                Name = customer.Name,
+                Email = customer.Email,
+                MoneySpent = customer.MoneySpent,
+                Status = customer.Status.ToString(),
+                StatusExpirationDate = customer.StatusExpirationDate,
+                PurchasedMovies = customer.PurchasedMovies.Select(x => new PurchaseMovieDto
+                {
+                    Price = x.Price,
+                    ExpirationDate = x.ExpirationDate,
+                    PurchaseDate = x.PurchaseDate,
+                    Movie = new MovieDto
+                    {
+                        Id = x.Movie.Id,
+                        Name = x.Movie.Name
+                    }
+
+                }).ToList()
+            };
+            return Json(dto);
         }
 
         [HttpGet]
         public JsonResult GetList()
         {
             IReadOnlyList<Customer> customers = _customerRepository.GetList();
-            return Json(customers);
+
+            var dtos = customers.Select(x => new CustomerInListDto
+            {
+                Id = x.Id,
+                Name = x.Name,
+                Email = x.Email,
+                MoneySpent = x.MoneySpent,
+                Status = x.Status.ToString(),
+                StatusExpirationDate = x.StatusExpirationDate
+            });
+            return Json(dtos);
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] Customer item)
+        public IActionResult Create([FromBody] CreateCustomerDto item)
         {
             try
             {
@@ -57,9 +87,17 @@ namespace Api.Controllers
                     return BadRequest("Email is already in use: " + item.Email);
                 }
 
-                item.Id = 0;
-                item.Status = CustomerStatus.Regular;
-                _customerRepository.Add(item);
+                var customer = new Customer
+                {
+                    Name = item.Name,
+                    Email = item.Email,
+                    MoneySpent = 0,
+                    Status = CustomerStatus.Regular,
+                    StatusExpirationDate = null
+                };
+
+                
+                _customerRepository.Add(customer);
                 _customerRepository.SaveChanges();
 
                 return Ok();
@@ -72,7 +110,7 @@ namespace Api.Controllers
 
         [HttpPut]
         [Route("{id}")]
-        public IActionResult Update(long id, [FromBody] Customer item)
+        public IActionResult Update(long id, [FromBody] UpdateCustomerDto item)
         {
             try
             {
