@@ -8,8 +8,19 @@ namespace Logic.Entities
 {
     public class Customer : Entity
     {
-        public virtual string Name { get; set; }
-        public virtual string Email { get; set; }
+        private string _name;
+        private string _email;
+
+        public virtual CustomerName Name
+        {
+            get => (CustomerName)_name; 
+            set => _name = value;
+        }
+        public virtual Email Email
+        {
+            get => (Email)_email;
+            set => _email = value;
+        }
         public virtual CustomerStatus Status { get; set; }
         public virtual DateTime? StatusExpirationDate { get; set; }
         public virtual decimal MoneySpent { get; set; }
